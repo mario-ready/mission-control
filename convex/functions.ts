@@ -1,5 +1,5 @@
 import { mutation, query } from "./_generated/server";
-import { v } from "convex/server";
+import { v } from "convex/values";
 
 export const addActivity = mutation({
   args: {
@@ -22,6 +22,6 @@ export const addActivity = mutation({
 export const listActivities = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("activities").orderBy("timestamp", "desc").take(50);
+    return await ctx.db.query("activities").withIndex("by_timestamp").order("desc").take(50);
   },
 });
