@@ -19,6 +19,14 @@ import { AnimatePresence, motion } from "framer-motion";
 
 type Activity = Doc<"activities">;
 
+type SolidBlock = {
+  kind: "activity" | "brick";
+  x: number;
+  y: number;
+  activity?: Activity;
+  activityIndex?: number;
+};
+
 const PX = 4; // pixel scale for sprites
 const MARIO_W = 16 * PX;
 const MARIO_H = 16 * PX;
@@ -155,6 +163,25 @@ function activityLabel(type: string): string {
       "campaign-sent": "CAMPAIGN",
     } as Record<string, string>)[type] ?? type.toUpperCase()
   );
+}
+
+function getSolidBlocks(activities: Activity[] | undefined, viewW: number): SolidBlock[] {
+  if (activities && activities.length > 0) {
+    return activities.map((activity, i) => ({
+      kind: "activity" as const,
+      x: WORLD_PAD + i * BLOCK_SPACING,
+      y: BLOCK_Y,
+      activity,
+      activityIndex: i,
+    }));
+  }
+
+  // Empty-state bricks are real collision geometry, not just decoration.
+  return [0, 1, 2].map((i) => ({
+    kind: "brick" as const,
+    x: viewW * 0.3 + i * BLOCK_SIZE + BLOCK_SIZE / 2,
+    y: 80,
+  }));
 }
 
 // ════════════════════════════════════════════════════════════
@@ -595,6 +622,7 @@ export default function MissionControl() {
       }
 
       // ── Physics ──
+      const prevY = s.y;
       s.x += s.vx;
       s.vy -= GRAVITY;
       s.y += s.vy;
@@ -606,26 +634,33 @@ export default function MissionControl() {
       }
       s.x = Math.max(0, Math.min(ww - MARIO_W, s.x));
 
-      // ── Block collision ──
+      // ── Block collision: bricks and ? blocks are solid.
+      // Coordinate system: y increases upward from the ground.
+      // We only resolve underside hits here, Mario-style.
       if (s.vy > 0) {
+        const prevHead = prevY + MARIO_H;
         const head = s.y + MARIO_H;
-        const acts = activitiesRef.current;
-        if (acts) {
-          for (let i = 0; i < acts.length; i++) {
-            if (bumpedRef.current.has(acts[i]._id)) continue;
-            const bx = WORLD_PAD + i * BLOCK_SPACING;
-            const bL = bx - BLOCK_SIZE / 2;
-            const bR = bx + BLOCK_SIZE / 2;
-            if (
-              head >= BLOCK_Y &&
-              head <= BLOCK_Y + BLOCK_SIZE &&
-              s.x + MARIO_W > bL &&
-              s.x < bR
-            ) {
-              doBumpRef.current(acts[i], i);
-              s.vy = -Math.abs(s.vy) * 0.25;
-              break;
+        const blocks = getSolidBlocks(activitiesRef.current, vw);
+
+        for (const block of blocks) {
+          if (block.kind === "activity" && block.activity && bumpedRef.current.has(block.activity._id)) {
+            continue;
+          }
+
+          const bL = block.x - BLOCK_SIZE / 2;
+          const bR = block.x + BLOCK_SIZE / 2;
+          const hitHorizontally = s.x + MARIO_W > bL && s.x < bR;
+          const crossedUnderside = prevHead <= block.y && head >= block.y;
+
+          if (hitHorizontally && crossedUnderside) {
+            if (block.kind === "activity" && block.activity && block.activityIndex !== undefined) {
+              doBumpRef.current(block.activity, block.activityIndex);
             }
+
+            // Keep Mario below the solid block and bounce him downward.
+            s.y = Math.max(0, block.y - MARIO_H - 1);
+            s.vy = -Math.abs(s.vy) * 0.25;
+            break;
           }
         }
       }
