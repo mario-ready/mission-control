@@ -27,6 +27,12 @@ type SolidBlock = {
   activityIndex?: number;
 };
 
+type PipeCollider = {
+  left: number;
+  right: number;
+  top: number;
+};
+
 const PX = 4; // pixel scale for sprites
 const MARIO_W = 16 * PX;
 const MARIO_H = 16 * PX;
@@ -182,6 +188,20 @@ function getSolidBlocks(activities: Activity[] | undefined, viewW: number): Soli
     x: viewW * 0.3 + i * BLOCK_SIZE + BLOCK_SIZE / 2,
     y: 80,
   }));
+}
+
+function getPipeColliders(worldWidth: number, viewW: number): PipeCollider[] {
+  const pipes: PipeCollider[] = [
+    // Starting pipe: visual left 40, lip extends 6px each side, height 64 + 20 lip.
+    { left: 34, right: 116, top: 84 },
+  ];
+
+  if (worldWidth > viewW) {
+    // End pipe: visual left worldWidth - 140, lip extends 6px each side, height 96 + 20 lip.
+    pipes.push({ left: worldWidth - 146, right: worldWidth - 70, top: 116 });
+  }
+
+  return pipes;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -622,10 +642,42 @@ export default function MissionControl() {
       }
 
       // ── Physics ──
+      const prevX = s.x;
       const prevY = s.y;
       s.x += s.vx;
+
+      // Pipes are solid horizontal obstacles.
+      const pipeColliders = getPipeColliders(ww, vw);
+      for (const pipe of pipeColliders) {
+        const overlapsVertically = s.y < pipe.top && s.y + MARIO_H > 0;
+        const overlapsHorizontally = s.x + MARIO_W > pipe.left && s.x < pipe.right;
+        if (overlapsVertically && overlapsHorizontally) {
+          if (prevX + MARIO_W <= pipe.left && s.vx > 0) {
+            s.x = pipe.left - MARIO_W;
+            s.vx = 0;
+          } else if (prevX >= pipe.right && s.vx < 0) {
+            s.x = pipe.right;
+            s.vx = 0;
+          }
+        }
+      }
+
       s.vy -= GRAVITY;
       s.y += s.vy;
+
+      // Pipes are also platforms: Mario can land on top of them.
+      if (s.vy < 0) {
+        for (const pipe of pipeColliders) {
+          const overlapsHorizontally = s.x + MARIO_W > pipe.left && s.x < pipe.right;
+          const crossedTop = prevY >= pipe.top && s.y <= pipe.top;
+          if (overlapsHorizontally && crossedTop) {
+            s.y = pipe.top;
+            s.vy = 0;
+            s.jumping = false;
+            break;
+          }
+        }
+      }
 
       if (s.y <= 0) {
         s.y = 0;
@@ -643,23 +695,43 @@ export default function MissionControl() {
         const blocks = getSolidBlocks(activitiesRef.current, vw);
 
         for (const block of blocks) {
-          if (block.kind === "activity" && block.activity && bumpedRef.current.has(block.activity._id)) {
-            continue;
-          }
-
           const bL = block.x - BLOCK_SIZE / 2;
           const bR = block.x + BLOCK_SIZE / 2;
           const hitHorizontally = s.x + MARIO_W > bL && s.x < bR;
           const crossedUnderside = prevHead <= block.y && head >= block.y;
 
           if (hitHorizontally && crossedUnderside) {
-            if (block.kind === "activity" && block.activity && block.activityIndex !== undefined) {
+            if (
+              block.kind === "activity" &&
+              block.activity &&
+              block.activityIndex !== undefined &&
+              !bumpedRef.current.has(block.activity._id)
+            ) {
               doBumpRef.current(block.activity, block.activityIndex);
             }
 
             // Keep Mario below the solid block and bounce him downward.
             s.y = Math.max(0, block.y - MARIO_H - 1);
             s.vy = -Math.abs(s.vy) * 0.25;
+            break;
+          }
+        }
+      }
+
+      // ── Block landing: bricks and ? blocks are platforms too.
+      if (s.vy < 0) {
+        const blocks = getSolidBlocks(activitiesRef.current, vw);
+        for (const block of blocks) {
+          const bL = block.x - BLOCK_SIZE / 2;
+          const bR = block.x + BLOCK_SIZE / 2;
+          const blockTop = block.y + BLOCK_SIZE;
+          const hitHorizontally = s.x + MARIO_W > bL && s.x < bR;
+          const crossedTop = prevY >= blockTop && s.y <= blockTop;
+
+          if (hitHorizontally && crossedTop) {
+            s.y = blockTop;
+            s.vy = 0;
+            s.jumping = false;
             break;
           }
         }
