@@ -1,21 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const pressStart = Press_Start_2P({
+  weight: "400",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-press-start",
 });
 
 export const metadata: Metadata = {
   title: "Mission Control",
-  description: "Ready team operations dashboard",
+  description: "Ready team operations dashboard — Super Mario Edition",
 };
 
 export default function RootLayout({
@@ -24,11 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
+    <html lang="en" className={`${pressStart.variable} h-full`}>
+      <body className="h-full">
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>
     </html>

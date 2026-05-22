@@ -1,26 +1,87 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* ── Mario palette ── */
+  --color-mario-sky: #5C94FC;
+  --color-mario-sky-light: #9CC4FC;
+  --color-mario-ground: #C84C0C;
+  --color-mario-ground-dark: #A43000;
+  --color-mario-brick: #E09848;
+  --color-mario-block: #FAC000;
+  --color-mario-block-dark: #C89800;
+  --color-mario-block-used: #886830;
+  --color-mario-pipe: #00A800;
+  --color-mario-pipe-dark: #006800;
+  --color-mario-pipe-light: #48D848;
+  --color-mario-red: #E44332;
+  --color-mario-blue: #2038EC;
+  --color-mario-brown: #6B3400;
+  --color-mario-skin: #FFAC5C;
+  --color-mario-coin: #FFD800;
+  --color-mario-hill: #48A828;
+  --color-mario-hill-dark: #2D8A14;
+  --color-mario-white: #FCF8FC;
+
+  /* ── Fonts ── */
+  --font-retro: var(--font-press-start), "Press Start 2P", monospace;
+
+  /* ── Animations ── */
+  --animate-blink: blink 1s step-end infinite;
+  --animate-float: question-float 2s ease-in-out infinite;
+  --animate-bump: block-bump 0.3s ease-out;
+  --animate-coin: coin-burst 0.65s ease-out forwards;
+  --animate-cloud: cloud-drift 60s linear infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Keyframes ── */
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
 }
+
+@keyframes question-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes block-bump {
+  0%   { transform: translateY(0); }
+  35%  { transform: translateY(-18px); }
+  70%  { transform: translateY(3px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes coin-burst {
+  0%   { transform: translateY(0) scaleX(1); opacity: 1; }
+  20%  { transform: translateY(-50px) scaleX(0.2); opacity: 1; }
+  50%  { transform: translateY(-90px) scaleX(1); opacity: 1; }
+  80%  { transform: translateY(-110px) scaleX(0.2); opacity: 0.5; }
+  100% { transform: translateY(-120px) scaleX(1); opacity: 0; }
+}
+
+@keyframes cloud-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-200px); }
+}
+
+@keyframes star-spin {
+  0%   { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.3); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* ── Base ── */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #000;
+  overflow: hidden;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+}
+
+/* crisp pixel rendering for sprites */
+.pixel-render {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
