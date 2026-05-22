@@ -1,11 +1,12 @@
 import { mutation, query } from "./_generated/server";
+import { v } from "convex/server";
 
 export const addActivity = mutation({
   args: {
-    type: "string",
-    description: "string",
-    url: "string",
-    agent: "string",
+    type: v.string(),
+    description: v.string(),
+    url: v.optional(v.string()),
+    agent: v.string(),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("activities", {
