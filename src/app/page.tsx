@@ -28,7 +28,7 @@ const BLOCK_SPACING = 220;
 const BLOCK_Y = 160; // above ground
 const WORLD_PAD = 280;
 const WALK_SPEED = 4.5;
-const JUMP_VEL = -12.5;
+const JUMP_VEL = 13;
 const GRAVITY = 0.58;
 const HUD_H = 56;
 
@@ -596,7 +596,7 @@ export default function MissionControl() {
 
       // ── Physics ──
       s.x += s.vx;
-      s.vy += GRAVITY;
+      s.vy -= GRAVITY;
       s.y += s.vy;
 
       if (s.y <= 0) {
@@ -607,7 +607,7 @@ export default function MissionControl() {
       s.x = Math.max(0, Math.min(ww - MARIO_W, s.x));
 
       // ── Block collision ──
-      if (s.vy < 0) {
+      if (s.vy > 0) {
         const head = s.y + MARIO_H;
         const acts = activitiesRef.current;
         if (acts) {
@@ -623,7 +623,7 @@ export default function MissionControl() {
               s.x < bR
             ) {
               doBumpRef.current(acts[i], i);
-              s.vy = Math.abs(s.vy) * 0.25;
+              s.vy = -Math.abs(s.vy) * 0.25;
               break;
             }
           }
